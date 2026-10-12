@@ -1,0 +1,26 @@
+# Alternative to `npm run db`: runs PostgreSQL and the API in containers.
+#   docker compose up --build
+#   docker compose exec api node scripts/seed.js
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ticker
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      retries: 10
+  api:
+    build: .
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/ticker
+      JWT_SECRET: change-me-in-production
+      CODE_SECRET: change-me-in-production-too
+      PUBLIC_BASE_URL: http://localhost:3004
+    ports: ["3004:3004"]
+volumes:
+  pgdata:
